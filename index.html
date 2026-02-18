@@ -216,12 +216,11 @@
 
       /* Intro sequence full-bleed */
       #intro-sequence {
-        width: 100% !important;
-        height: auto !important;
-        max-height: 100vh;
-        object-fit: cover;
+        width: 100vw !important; /* Force full viewport width */
+        height: 100vh !important; /* Force full viewport height */
+        display: block;
+        object-fit: cover; /* This fills the screen and crops the edges slightly */
       }
-
       .intro {
         height: 100vh;
         display: flex;
@@ -7096,34 +7095,33 @@
       }
 
       function renderIntro() {
+        // Clear the canvas
         introCtx.clearRect(0, 0, introCanvas.width, introCanvas.height);
+
         if (introImages[introSeq.frame]) {
-          introCtx.drawImage(introImages[introSeq.frame], 0, 0);
+          const img = introImages[introSeq.frame];
+
+          // Calculate "Cover" logic so the mountains fill the screen
+          const canvasAspect = introCanvas.width / introCanvas.height;
+          const imgAspect = img.width / img.height;
+
+          let drawWidth, drawHeight, offsetX, offsetY;
+
+          if (canvasAspect > imgAspect) {
+            drawWidth = introCanvas.width;
+            drawHeight = introCanvas.width / imgAspect;
+            offsetX = 0;
+            offsetY = (introCanvas.height - drawHeight) / 2;
+          } else {
+            drawWidth = introCanvas.height * imgAspect;
+            drawHeight = introCanvas.height;
+            offsetX = (introCanvas.width - drawWidth) / 2;
+            offsetY = 0;
+          }
+
+          introCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
         }
       }
-
-      introImages[0].onload = renderIntro;
-
-      ScrollTrigger.create({
-        trigger: ".scroll-intro-sequence",
-        start: "top top",
-        end: "+=3000",
-        pin: true,
-        scrub: 1.5,
-        onUpdate: (self) => {
-          if (window.innerWidth >= 768) {
-            introSeq.frame = Math.min(
-              Math.floor(self.progress * introFrameCount),
-              introFrameCount - 1
-            );
-            renderIntro();
-          } else if (introPortraitVideo.duration) {
-            introPortraitVideo.currentTime =
-              self.progress * introPortraitVideo.duration;
-          }
-        },
-      });
-
       // --- SECTION 2: DUAL-RESOLUTION SCROLL LOGIC ---
       const timelineFrames = 10;
       const timelineCanvas = document.getElementById("timeline-sequence");
