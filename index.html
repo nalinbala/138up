@@ -7076,32 +7076,38 @@
       const introFrameCount = 150;
       const introCanvas = document.getElementById("intro-sequence");
       const introCtx = introCanvas.getContext("2d");
-      const introPortraitVideo = document.querySelector(
-        ".intro-video-portrait"
-      );
 
-      introCanvas.width = 1920;
-      introCanvas.height = 1034;
+      // Set internal pixel resolution to match the window for sharpness
+      function resizeIntroCanvas() {
+        introCanvas.width = window.innerWidth;
+        introCanvas.height = window.innerHeight;
+        renderIntro();
+      }
 
       const introImages = [];
       const introSeq = { frame: 0 };
 
+      // Load all 150 images
       for (let i = 0; i < introFrameCount; i++) {
         const img = new Image();
+        // Ensure the path and lowercase 'intro' match your GitHub files
         img.src = `assets/images/scroll/intro-sequence/intro_${String(
           i
         ).padStart(5, "0")}.webp`;
+        img.onload = () => {
+          if (i === 0) renderIntro();
+        }; // Render first frame immediately
         introImages.push(img);
       }
 
       function renderIntro() {
-        // Clear the canvas
-        introCtx.clearRect(0, 0, introCanvas.width, introCanvas.height);
-
-        if (introImages[introSeq.frame]) {
+        if (
+          introImages[introSeq.frame] &&
+          introImages[introSeq.frame].complete
+        ) {
           const img = introImages[introSeq.frame];
 
-          // Calculate "Cover" logic so the mountains fill the screen
+          // Calculate "Cover" logic (Full Bleed)
           const canvasAspect = introCanvas.width / introCanvas.height;
           const imgAspect = img.width / img.height;
 
@@ -7119,9 +7125,29 @@
             offsetY = 0;
           }
 
+          introCtx.clearRect(0, 0, introCanvas.width, introCanvas.height);
           introCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
         }
       }
+
+      // Initial call and listener
+      resizeIntroCanvas();
+      window.addEventListener("resize", resizeIntroCanvas);
+
+      // Connect to ScrollTrigger
+      gsap.to(introSeq, {
+        frame: introFrameCount - 1,
+        snap: "frame",
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".scroll-intro-sequence",
+          start: "top top",
+          end: "+=3000", // Adjust this for scroll speed
+          pin: true,
+          scrub: 0.5,
+          onUpdate: renderIntro,
+        },
+      });
       // --- SECTION 2: DUAL-RESOLUTION SCROLL LOGIC ---
       const timelineFrames = 10;
       const timelineCanvas = document.getElementById("timeline-sequence");
